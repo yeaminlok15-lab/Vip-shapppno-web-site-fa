@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site_name }} — Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--ac:{{ theme_color }};--ac-dim:{{ theme_color }}88;--ac-lite:{{ theme_color }}11;}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#06010f;color:#e5e7eb;font-family:'JetBrains Mono',monospace;min-height:100vh}
+        header{background:#0a0015;border-bottom:3px solid var(--ac-dim);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+        .logo{display:flex;align-items:center;gap:8px}
+        .logo-skull{font-size:20px;filter:drop-shadow(0 0 6px var(--ac))}
+        .logo-name{color:var(--ac);font-weight:700;font-size:15px;letter-spacing:1px;text-shadow:0 0 8px var(--ac)}
+        .header-stats{display:flex;gap:12px;font-size:10px;color:var(--ac-dim)}
+        .header-right{display:flex;align-items:center;gap:8px}
+        .btn{padding:4px 10px;border-radius:6px;font-family:inherit;font-size:10px;cursor:pointer;border:2px solid;transition:all .2s;text-decoration:none;display:inline-block}
+        .btn-ac{border-color:var(--ac-dim);color:var(--ac);background:transparent}
+        .btn-ac:hover{background:var(--ac-lite);box-shadow:0 0 8px var(--ac-dim)}
+        .btn-red{border-color:#ef444488;color:#ef4444;background:transparent}
+        .btn-red:hover{background:#ef444411}
+        main{padding:20px;max-width:700px;margin:0 auto}
+        .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+        .stat-card{background:#0d000d;border:3px solid #1a0a1a;border-radius:12px;padding:16px;text-align:center}
+        .stat-num{font-size:32px;font-weight:700}
+        .stat-num.ac{color:var(--ac);text-shadow:0 0 16px var(--ac)}
+        .stat-num.white{color:#e5e7eb}
+        .stat-label{font-size:10px;color:#4b5563;letter-spacing:2px;margin-top:2px}
+        .server-card{background:#0a0015;border:3px solid #1a0a2a;border-left-width:6px;border-radius:10px;padding:16px;margin-bottom:12px;transition:all .2s}
+        .server-card.running{border-left-color:var(--ac)}
+        .server-card.stopped{border-left-color:#ef4444}
+        .server-card:hover{border-color:var(--ac-dim);transform:translateY(-2px)}
+        .server-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+        .server-name{font-weight:700;font-size:15px;color:#fff;letter-spacing:.5px}
+        .status-badge{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;border:2px solid}
+        .status-badge.running{border-color:var(--ac);color:var(--ac);box-shadow:0 0 8px var(--ac-lite)}
+        .status-badge.stopped{border-color:#ef4444;color:#ef4444}
+        .server-sub{font-size:11px;color:#4b5563;margin-bottom:14px}
+        .actions{display:flex;gap:8px;flex-wrap:wrap}
+        .action-btn{width:40px;height:36px;background:transparent;border-radius:7px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:inherit;border:2px solid}
+        .action-btn:hover{transform:scale(1.1)}
+        .empty{text-align:center;padding:60px 20px;color:#374151}
+        .empty-icon{font-size:48px;margin-bottom:12px;opacity:.3}
+        /* ===== + বাটন - নিচে (আগের জায়গায়) ===== */
+        .fab{bottom:28px;right:28px;position:fixed;width:56px;height:56px;border-radius:50%;background:var(--ac);color:#fff;border:none;font-size:28px;font-weight:700;cursor:pointer;box-shadow:0 0 25px var(--ac-dim);display:flex;align-items:center;justify-content:center;z-index:50;transition:all .2s;font-family:inherit}
+        .fab:hover{transform:scale(1.1)}
+        .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:100}
+        .modal-bg.show{display:flex}
+        .modal{background:#0a0015;border:3px solid var(--ac);border-radius:12px;padding:28px;width:320px;box-shadow:0 0 32px var(--ac-lite)}
+        .modal-title{font-size:14px;font-weight:700;color:var(--ac);letter-spacing:2px;margin-bottom:20px}
+        .form-group{margin-bottom:14px}
+        .form-label{font-size:11px;color:#6b7280;display:block;margin-bottom:6px;letter-spacing:1px}
+        .form-input{width:100%;padding:9px 12px;background:#111;border:2px solid var(--ac-dim);border-radius:7px;color:var(--ac);font-family:inherit;font-size:13px;outline:none}
+        .form-input:focus{border-color:var(--ac)}
+        select.form-input option{background:#0a0015}
+        .modal-actions{display:flex;gap:10px;margin-top:20px}
+        .modal-btn{flex:1;padding:10px;border-radius:7px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;border:3px solid var(--ac);background:transparent;color:var(--ac)}
+        .modal-cancel{border-color:#333;color:#6b7280}
+        #toast{position:fixed;bottom:20px;right:20px;background:#0a0015;border:3px solid var(--ac);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--ac);transform:translateY(80px);opacity:0;transition:all .3s;z-index:200;box-shadow:0 0 20px var(--ac-lite)}
+        #toast.show{transform:translateY(0);opacity:1}
+        /* ফাইল আপলোড - hidden input */
+        .upload-input{display:none}
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <span class="logo-skull">✦</span>
+            <span class="logo-name">{{ site_name }}</span>
+        </div>
+        <div class="header-stats">
+            <span id="statCpu">CPU: --%</span>
+            <span id="statRam">RAM: --%</span>
+            <span id="statDisk">DISK: --%</span>
+        </div>
+        <div class="header-right">
+            <a href="/logout" class="btn btn-red">LOGOUT</a>
+        </div>
+    </header>
+
+    <main>
+        <div class="stats">
+            <div class="stat-card"><div class="stat-num ac">{{ running }}</div><div class="stat-label">RUNNING</div></div>
+            <div class="stat-card"><div class="stat-num white">{{ total }}</div><div class="stat-label">TOTAL</div></div>
+        </div>
+
+        {% if servers %}
+            {% for name, cfg in servers.items() %}
+            <div class="server-card {{ cfg.status }}">
+                <div class="server-top">
+                    <span class="server-name">{{ name.upper() }}</span>
+                    <span class="status-badge {{ cfg.status }}">{{ cfg.status.upper() }}</span>
+                </div>
+                <div class="server-sub">{{ cfg.runtime }} {{ cfg.main_file or 'main.py' }}</div>
+                <div class="actions">
+                    {% if cfg.status == 'running' %}
+                    <form action="/server/{{ name }}/stop" method="POST" style="display:inline">
+                        <button class="action-btn" style="border-color:#ef444488;color:#ef4444" title="Stop">■</button>
+                    </form>
+                    {% else %}
+                    <form action="/server/{{ name }}/start" method="POST" style="display:inline">
+                        <button class="action-btn" style="border-color:var(--ac-dim);color:var(--ac)" title="Start">▶</button>
+                    </form>
+                    {% endif %}
+                    <a href="/server/{{ name }}" class="action-btn" style="border-color:#38bdf888;color:#38bdf8" title="View">👀</a>
+                    <!-- ফাইল আপলোড বাটন -->
+                    <button class="action-btn upload-btn" style="border-color:var(--ac-dim);color:var(--ac)" title="Upload Files" onclick="document.getElementById('upload-{{ name }}').click()">📁</button>
+                    <input type="file" id="upload-{{ name }}" class="upload-input" accept=".zip,.py,.js,.ts,.html,.css,.json,.txt,.md,.sh" data-server="{{ name }}">
+                    <form action="/server/delete/{{ name }}" method="POST" style="display:inline" onsubmit="return confirm('Delete {{ name }}?')">
+                        <button class="action-btn" style="border-color:#ef444488;color:#ef4444" title="Delete">🗑</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty">
+                <div class="empty-icon">📂</div>
+                <div>NO PROJECTS YET</div>
+                <div style="font-size:11px;color:#4b5563;margin-top:8px">Click + to create one</div>
+            </div>
+        {% endif %}
+    </main>
+
+    <!-- + বাটন - নিচে (আগের জায়গায়) -->
+    <button class="fab" onclick="document.getElementById('createModal').classList.add('show')">+</button>
+
+    <div id="createModal" class="modal-bg" onclick="if(event.target===this)this.classList.remove('show')">
+        <div class="modal">
+            <div class="modal-title">✦ NEW PROJECT</div>
+            <form action="/server/create" method="POST">
+                <div class="form-group">
+                    <label class="form-label">PROJECT NAME</label>
+                    <input class="form-input" name="name" placeholder="my-bot" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">RUNTIME</label>
+                    <select class="form-input" name="runtime">
+                        <option value="python">Python</option>
+                        <option value="node">Node.js</option>
+                        <option value="static">Static</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn">CREATE</button>
+                    <button type="button" class="modal-btn modal-cancel" onclick="document.getElementById('createModal').classList.remove('show')">CANCEL</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        // প্রতিটি সার্ভারের জন্য ফাইল আপলোড হ্যান্ডলার
+        document.querySelectorAll('.upload-input').forEach(input => {
+            input.addEventListener('change', async function(e) {
+                if(!this.files[0]) return;
+                const file = this.files[0];
+                const serverName = this.dataset.server;
+                const fd = new FormData();
+                fd.append('file', file);
+                
+                const btn = this.parentElement.querySelector('.upload-btn');
+                const original = btn.textContent;
+                btn.textContent = '⏳';
+                
+                try {
+                    const r = await fetch('/server/' + serverName + '/upload', { method: 'POST', body: fd });
+                    const d = await r.json();
+                    if(d.success) {
+                        toast('✓ Uploaded ' + d.files.length + ' files to ' + serverName);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        toast('✗ ' + d.error, '#ef4444');
+                    }
+                } catch(e) {
+                    toast('✗ Upload failed', '#ef4444');
+                }
+                btn.textContent = original;
+                this.value = '';
+            });
+        });
+
+        async function fetchStats(){
+            try{
+                const r=await fetch('/api/stats');
+                const d=await r.json();
+                document.getElementById('statCpu').textContent='CPU: '+d.cpu.toFixed(1)+'%';
+                document.getElementById('statRam').textContent='RAM: '+d.ram.toFixed(1)+'%';
+                document.getElementById('statDisk').textContent='DISK: '+d.disk.toFixed(1)+'%';
+            }catch(e){}
+        }
+        fetchStats();
+        setInterval(fetchStats,5000);
+
+        function toast(msg,color){const t=document.getElementById('toast');t.textContent=msg;t.style.borderColor=color||getComputedStyle(document.documentElement).getPropertyValue('--ac').trim();t.style.color=color||getComputedStyle(document.documentElement).getPropertyValue('--ac').trim();t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+        // Theme color animation - প্রতি 0.20 সেকেন্ডে
+        const colors = ['#00ff41','#a855f7','#38bdf8','#ef4444','#fbbf24','#06b6d4','#ec4899','#84cc16','#ff00ff','#ff6b00'];
+        let colorIndex = 0;
+        setInterval(() => {
+            colorIndex = (colorIndex + 1) % colors.length;
+            const newColor = colors[colorIndex];
+            document.documentElement.style.setProperty('--ac', newColor);
+            document.documentElement.style.setProperty('--ac-dim', newColor + '88');
+            document.documentElement.style.setProperty('--ac-lite', newColor + '11');
+            document.querySelectorAll('.stat-num.ac, .logo-name, .status-badge.running, .fab').forEach(el => {
+                el.style.color = newColor;
+                el.style.borderColor = newColor + '88';
+                if(el.classList.contains('fab')) {
+                    el.style.background = newColor;
+                    el.style.boxShadow = '0 0 25px ' + newColor + '88';
+                }
+            });
+            document.querySelectorAll('.server-card.running').forEach(el => {
+                el.style.borderLeftColor = newColor;
+            });
+            document.querySelectorAll('.upload-btn').forEach(el => {
+                el.style.borderColor = newColor + '88';
+                el.style.color = newColor;
+            });
+        }, 200);
+    </script>
+</body>
+</html>
